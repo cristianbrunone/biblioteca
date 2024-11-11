@@ -1,0 +1,76 @@
+// 1. Criar um objeto carro com as propriedades marca, modelo e ano
+let carro = {
+  marca: "Toyota",
+  modelo: "Corolla",
+  ano: 2020
+};
+
+// Acessar e imprimir a propriedade modelo do objeto carro
+console.log("Modelo do carro:", carro.modelo);
+
+// 2. Adicionar a propriedade cor e modificar o ano do carro
+carro.cor = "Azul"; // Adicionar a propriedade cor
+carro.ano = 2021;   // Modificar a propriedade ano
+
+// Imprimir o objeto carro modificado
+console.log("Carro modificado:", carro);
+
+
+/******
+// 1. Criar o objeto calculadora com um método soma
+let calculadora = {
+  // Método soma que aceita dois números e retorna a soma
+  soma: function (num1, num2) {
+    return num1 + num2;
+  }
+};
+
+// Usar o método soma da calculadora
+let resultado = calculadora.soma(5, 3);
+console.log("Resultado da soma:", resultado);
+
+// 2. Criar um objeto exemplo para iterar sobre suas propriedades
+let pessoa = {
+  nome: "João",
+  idade: 30,
+  cidade: "São Paulo"
+};
+
+// Iterar sobre as propriedades do objeto pessoa usando for...in
+for (let propriedade in pessoa) {
+  console.log(propriedade + ": " + pessoa[propriedade]);
+}
+
+
+/********
+// Criar um objeto livro com propriedades titulo e autor
+let livro = {
+  titulo: "O Senhor dos Anéis",
+  autor: "J.R.R. Tolkien"
+};
+
+// Criar outra variável que referencie o objeto livro
+let referenciaLivro = livro;
+
+// Modificar a propriedade titulo através da variável referenciaLivro
+referenciaLivro.titulo = "O Hobbit";
+
+// Verificar se o objeto original livro foi alterado
+console.log("Título original do livro:", livro.titulo);
+console.log("Título através da referência:", referenciaLivro.titulo);
+
+
+// Criar um objeto exemplo
+let pessoa = {
+  nome: "Maria",
+  idade: 28,
+  profissao: "Engenheira"
+};
+
+// Usar Object.keys() para listar todas as chaves do objeto
+let chaves = Object.keys(pessoa);
+console.log("Chaves do objeto:", chaves);
+
+// Usar Object.values() para listar todos os valores do objeto
+let valores = Object.values(pessoa);
+console.log("Valores do objeto:", valores);
