@@ -2,9 +2,17 @@
   "version": "2.2.2",
   "private": true,
   "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview",
     "release": "code -r CHANGELOG.md && node -e \"process.stdin.once('data', () => process.exit())\" && yarn bumpp --all package.json javascript-version/package.json typescript-version/package.json"
   },
   "devDependencies": {
     "bumpp": "^8.2.1"
+  },
+  "dependencies": {
+    "vite": "^5.4.11",
+    "vue": "^3.5.12",
+    "vuetify": "^3.7.4"
   }
 }
