@@ -19,8 +19,9 @@
         <v-list-item @click="navigateTo('cadastroUsuarios')">
           <v-list-item-title>Cadastro de Usuários</v-list-item-title>
         </v-list-item>
-        <v-list-item @click="navigateTo('cadastroAdmins')">
-          <v-list-item-title>Cadastro de Admins</v-list-item-title>
+          <!-- Exibe o item apenas se o usuário for superadmin -->
+        <v-list-item v-if="isSuperAdmin" @click="navigateTo('cadastroAdmins')">
+        <v-list-item-title>Cadastro de Admins</v-list-item-title>
         </v-list-item>
         <!-- Nuevo ítem para cerrar sesión -->
         <v-list-item @click="logoutDialog = true">
@@ -87,7 +88,7 @@
           </v-form>
         </template>
 
-        <template v-if="currentSection === 'cadastroAdmins'">
+       <template v-if="isSuperAdmin && currentSection === 'cadastroAdmins'">
           <!-- Formulário de cadastro de admins -->
           <v-form>
             <v-text-field label="Username" v-model="novoAdmin.username" />
@@ -95,7 +96,10 @@
             <v-btn @click="cadastrarAdmin">Cadastrar Admin</v-btn>
           </v-form>
         </template>
-
+        
+        <template v-else-if="currentSection === 'cadastroAdmins'">
+        <v-alert type="error">Você não tem permissão para acessar esta seção.</v-alert>
+        </template> 
 
         <template v-if="currentSection === 'disponiveis'">
           <v-row>
@@ -142,16 +146,28 @@
 </template>
 
 <script setup>
+
+ // Importa como una función predeterminada
+
+import axios from 'axios';
 import { ref } from 'vue';
 import AppFooter from '@/components/AppFooter.vue';
 import cardLivro from '@/components/CardLivro.vue';
-
+import { jwtDecode } from 'jwt-decode';
 
 
 // Estado de autenticación
 const isAuthenticated = ref(localStorage.getItem('adminToken') !== null); // Esto también asigna el valor a `isAuthenticated`.
 const loginDialog = ref(false);
 const currentSection = ref('emprestimos');
+
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem('adminToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 // Datos de login
 const adminLogin = ref({
@@ -165,7 +181,32 @@ const novoAdmin = ref({
   senha: '',
 });
 
+const isSuperAdmin = ref(false);
+onMounted(async () => {
+  isSuperAdmin.value = await verificarSuperAdmin();
+});
 
+
+async function verificarSuperAdmin() {
+  const token = localStorage.getItem('adminToken'); // Obtener el token de localStorage
+  
+  if (!token) {
+    console.error('[ERROR] Token no encontrado');
+    isSuperAdmin.value = false; // Usuario no autenticado
+    return false;
+  }
+
+  try {
+    const decoded = jwtDecode(token); // Usar jwtDecode correctamente
+    isSuperAdmin.value = decoded.role === 'superadmin'; // Verificar el rol
+    console.log('[INFO] ¿Es Superadmin?', isSuperAdmin.value);
+    return isSuperAdmin.value;
+  } catch (error) {
+    console.error('[ERROR] Fallo al verificar rol del usuario:', error.message);
+    isSuperAdmin.value = false;
+    return false;
+  }
+}
 
 
 function navigateTo(section) {
@@ -179,42 +220,64 @@ function navigateTo(section) {
   }
 }
 
+async function cadastrarAdmin() {
+  try {
+    if (!novoAdmin.value.username || !novoAdmin.value.senha) {
+      console.log('Preencha todos os campos');
+      return;
+    }
 
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      console.log('Você não está autenticado');
+      return;
+    }
 
-// Función para cadastrar admin
-function cadastrarAdmin() {
-  if (novoAdmin.value.nome && novoAdmin.value.username && novoAdmin.value.senha) {
-    console.log('Admin cadastrado:', novoAdmin.value);
-    novoAdmin.value = { username: '', senha: '' };
-  } else {
-    console.log('Preencha todos os campos');
+    const response = await axios.post(
+      'http://localhost:3000/api/admin/register',
+      {
+        username: novoAdmin.value.username,
+        password: novoAdmin.value.senha,
+        role: 'admin', 
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`, // Incluye el token del superadmin
+        },
+      }
+    );
+
+    console.log('Admin cadastrado com sucesso:', response.data);
+    novoAdmin.value = { username: '', senha: '' }; // Limpar formulário
+  } catch (error) {
+    console.error('Erro ao cadastrar admin:', error.response?.data || error.message);
   }
 }
 
-import axios from 'axios';
 
 function handleLogin() {
-  // Log de los datos que se están enviando
-  console.log("Datos enviados para login:", {
-    username: adminLogin.value.username,
-    password: adminLogin.value.password
-  });
+  console.log('[INFO] Intentando iniciar sesión con:', adminLogin.value);
 
   axios.post('http://localhost:3000/api/admin/authenticate', {
     username: adminLogin.value.username,
     password: adminLogin.value.password,
   })
-    .then((response) => {
-      console.log("Respuesta del backend:", response); // Verificar la respuesta del backend
+    .then(async (response) => {
+      console.log('[INFO] Login exitoso, token recibido:', response.data.token);
       localStorage.setItem('adminToken', response.data.token);
+
       isAuthenticated.value = true;
       loginDialog.value = false;
+
+      // Verificar si es superadmin después del login
+      await verificarSuperAdmin();
     })
     .catch((error) => {
-      console.error("Error al iniciar sesión:", error.response || error); // Verifica el error completo
+      console.error('[ERROR] Error al iniciar sesión:', error.response?.data || error.message);
       alert('Credenciales inválidas');
     });
 }
+
 
 // Dados de exemplo para "Empréstimos", "Reservas" e "Livros Disponiveis"
 const livrosEmprestimo = ref([
