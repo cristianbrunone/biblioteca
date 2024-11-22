@@ -81,9 +81,8 @@
           <!-- Formulário de cadastro de usuários -->
           <v-form>
             <v-text-field label="Nome do Usuário" v-model="novoUsuario.nome" />
-            <v-text-field label="Email" v-model="novoUsuario.email" />
-            <v-text-field label="Senha" type="password" v-model="novoUsuario.senha" />
-            <v-text-field label="Telefone" v-model="novoUsuario.telefone" />
+            <v-text-field label="Idade" v-model="novoUsuario.idade" />
+            <v-text-field label="Telefone" v-model="novoUsuario.contato_responsavel" />
             <v-btn @click="cadastrarUsuario">Cadastrar Usuário</v-btn>
           </v-form>
         </template>
@@ -220,6 +219,50 @@ function navigateTo(section) {
   }
 }
 
+
+async function cadastrarUsuario() {
+  // Validar campos antes de enviar
+  if (!novoUsuario.value.nome || !novoUsuario.value.idade || !novoUsuario.value.contato_responsavel) {
+    console.error('Preencha todos os campos obrigatórios');
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      console.error('Token não encontrado. O usuário não está autenticado.');
+      return;
+    }
+
+    // Enviar datos al backend
+    const response = await axios.post(
+      'http://localhost:3000/api/usuario/register',
+      {
+        nome: novoUsuario.value.nome,
+        idade: parseInt(novoUsuario.value.idade, 10), // Convertir edad a número
+        contato_responsavel: novoUsuario.value.contato_responsavel,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`, // Incluir token de autenticación
+        },
+      }
+    );
+
+    console.log('Usuário cadastrado com sucesso:', response.data);
+
+    // Limpiar el formulario solo después de enviar con éxito
+    novoUsuario.value = { nome: '', idade: '', contato_responsavel: '' };
+  } catch (error) {
+    console.error('Erro ao cadastrar usuário:', error.response?.data || error.message);
+  }
+}
+
+
+
+
+
+
 async function cadastrarAdmin() {
   try {
     if (!novoAdmin.value.username || !novoAdmin.value.senha) {
@@ -344,9 +387,8 @@ const novoLivro = ref({
 // Dados para cadastro de usuários
 const novoUsuario = ref({
   nome: '',
-  email: '',
-  senha: '',
-  telefone: ''
+  idade: '',
+  contato_responsavel: '',
 });
 
 // Função para cadastrar livro
@@ -357,15 +399,7 @@ function cadastrarLivro() {
   }
 }
 
-// Função para cadastrar usuário
-function cadastrarUsuario() {
-  if (novoUsuario.value.nome && novoUsuario.value.email && novoUsuario.value.senha && novoUsuario.value.telefone) {
-    console.log('Usuário cadastrado:', novoUsuario.value);
-    novoUsuario.value = { nome: '', email: '', senha: '', telefone: '' }; // Resetar formulário
-  } else {
-    console.log('Preencha todos os campos');
-  }
-}
+
 
 const logoutDialog = ref(false);
 
