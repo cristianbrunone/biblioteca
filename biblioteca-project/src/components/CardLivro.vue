@@ -1,8 +1,11 @@
 <template>
-  <v-card class="ma-0" max-width="300" outlined>
-    <v-img :src="'https://picsum.photos/1920/1080?random=' + Math.random()" height="200" class="white--text no-margin">
+  <v-card class="ma-0 elevation-12" max-width="300" outlined>
+    <!-- Ajustamos la imagen para que ocupe todo el ancho y alto -->
+    <v-img :src="'https://picsum.photos/1920/1080?random=' + Math.random()" class="white--text no-margin" height="200px"
+      contain>
       <v-row class="fill-height" align="center" justify="center">
         <v-col class="text-center">
+          <!-- Puedes agregar contenido adicional aquí si lo deseas -->
         </v-col>
       </v-row>
     </v-img>
@@ -70,6 +73,8 @@ function realizarDevolucao() {
 <style scoped>
 .v-img {
   border-radius: 8px 8px 0 0;
+  object-fit: cover;
+  /* Asegura que la imagen cubra el espacio disponible */
 }
 
 .v-card {
