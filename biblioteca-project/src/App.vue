@@ -473,6 +473,27 @@ async function handleLogin() {
   }
 }
 
+
+async function cadastrarLivro() {
+  if (!novoLivro.value.titulo || !novoLivro.value.autor || !novoLivro.value.categoria) {
+    console.error('Preencha todos os campos obrigatórios');
+    return;
+  }
+
+  const token = localStorage.getItem('adminToken');
+  if (!token) return;
+
+  try {
+    await axios.post('http://localhost:3000/api/livro/register', novoLivro.value, { headers: { Authorization: `Bearer ${token}` } });
+    novoLivro.value = { titulo: '', autor: '', categoria: '' };
+    cadastroLivroSuccess.value = true;
+  } catch (error) {
+    cadastroLivroError.value = true;
+  }
+}
+
+
+
 async function handleEmprestarLivro() {
   if (!livroSelecionado.value) {
     alert('Por favor, selecione um livro para continuar.');
@@ -527,17 +548,26 @@ async function getLivrosDisponiveis() {
 }
 
 // Métodos de secciones
+// Métodos de secciones
 function navigateTo(section) {
+  console.log(`Navegando a la sección: ${section}`); // Log para rastrear la sección seleccionada
   const seccionesProtegidas = ['emprestimos', 'disponiveis', 'reservas', 'cadastro', 'cadastroUsuarios', 'cadastroAdmins', 'usuarios'];
+  console.log(`Usuario autenticado: ${isAuthenticated.value}`); // Log para verificar autenticación
+
   if (!isAuthenticated.value && seccionesProtegidas.includes(section)) {
+    console.log(`Acceso denegado a la sección protegida: ${section}`); // Log si no tiene acceso
     loginDialog.value = true;
   } else {
+    console.log(`Acceso permitido a la sección: ${section}`); // Log si tiene acceso
     currentSection.value = section;
+
     if (section === 'usuarios') {
+      console.log('Cargando usuarios...');
       carregarUsuarios();
     }
   }
 }
+
 
 function confirmLogout() {
   localStorage.removeItem('adminToken');
