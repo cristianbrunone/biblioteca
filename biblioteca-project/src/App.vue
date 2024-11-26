@@ -18,6 +18,12 @@
           <v-list-item-title>Empréstimos</v-list-item-title>
         </v-list-item>
 
+
+         <v-list-item v-if="isSuperAdmin" @click="navigateTo('emprestimosAtivosInativos')" :class="{ 'v-list-item--active': currentSection === 'emprestimosAtivosInativos' }">
+          <v-list-item-icon><v-icon>mdi-table</v-icon></v-list-item-icon>
+          <v-list-item-title>Empréstimos Ativos/Inativos</v-list-item-title>
+        </v-list-item>
+
         <!-- Ítem de Livros Disponíveis -->
         <v-list-item @click="navigateTo('disponiveis')"
           :class="{ 'v-list-item--active': currentSection === 'disponiveis' }" class="my-4">
@@ -85,9 +91,12 @@
 
 
     <!-- Barra de navegação -->
-    <v-app-bar app>
-      <v-toolbar-title class="text-center" style="flex-grow: 1;">Biblioteca ONG</v-toolbar-title>
-    </v-app-bar>
+  <v-app-bar :color="isSuperAdmin ? 'purple' : 'primary'" app>
+  <v-toolbar-title class="text-center" style="flex-grow: 1;">
+    Biblioteca ONG
+    <span v-if="isSuperAdmin"> - Olá Admin</span>
+   </v-toolbar-title>
+  </v-app-bar>
 
 
     <!-- Conteúdo principal -->
@@ -108,7 +117,7 @@
           <v-row>
             <v-col v-for="(emprestimo, index) in emprestimosAtivos" :key="index" cols="12" md="4">
               <v-card class="elevation-12" :style="cardStyle">
-                <v-card-title class="headline font-weight-bold">{{ emprestimo.nome_livro }}</v-card-title>
+                <v-card-title class="headline font-weight-bold">{{ emprestimo.nome_livro || "Livro não disponível" }}</v-card-title>
                 <v-card-subtitle class="subheading mb-2">{{ emprestimo.nome_usuario }}</v-card-subtitle>
                 <v-card-text class="text--primary">
                   <div><strong>Data de Empréstimo:</strong> {{ emprestimo.data_emprestimo }}</div>
@@ -293,6 +302,32 @@
           </v-alert>
         </template>
 
+          <!-- Exibindo empréstimos ativos e inativos -->
+        <template  v-if="currentSection === 'emprestimosAtivosInativos'">
+          <v-row>
+            <v-col cols="12">
+              <v-data-table
+                :headers="tableHeaders"
+                :items="emprestimosAtivosInativos"
+                item-value="id_emprestimo"
+                class="elevation-1 mt-5"
+              >
+                <template v-slot:item.data_emprestimo="{ item }">
+                  <span>{{ item.data_emprestimo }}</span>
+                </template>
+
+                <template v-slot:item.data_devolucao="{ item }">
+                  <span>{{ item.data_devolucao }}</span>
+                </template>
+
+                <template v-slot:item.status="{ item }">
+                  <span>{{ item.status }}</span>
+                </template>
+              </v-data-table>
+            </v-col>
+          </v-row>
+        </template>
+
 
       </v-container>
     </v-main>
@@ -410,6 +445,62 @@ function selecionarLivro(id) {
   livroSelecionado.value = id; // Armazena o ID do livro selecionado
   console.log('Livro selecionado:', id); // Log para depuração
 }
+
+
+// Cabeçalhos da tabela
+const headers = [
+  { text: 'Nome do Livro', align: 'start', key: 'nome_livro' },
+  { text: 'Usuário', align: 'start', key: 'nome_usuario' },
+  { text: 'Data de Empréstimo', align: 'start', key: 'data_emprestimo' },
+  { text: 'Data de Devolução', align: 'start', key: 'data_devolucao' },
+  { text: 'Status', align: 'start', key: 'status' },
+];
+
+
+function formatDate(date) {
+  const parsedDate = new Date(date);
+  if (isNaN(parsedDate)) {
+    console.error("Data inválida:", date);
+    return null;
+  }
+  return parsedDate.toLocaleDateString('pt-BR');
+}
+
+
+const emprestimosAtivosInativos = ref([]);
+
+// Función para obtener empréstimos ativos
+async function carregarEmprestimosAtivosInativos() {
+  try {
+    const response = await axios.get('http://localhost:3000/api/emprestimos/ativoseinativos', {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('adminToken')}`,
+      },
+    });
+    
+    // Formatar as datas antes de atribuir aos emprestimosAtivosInativos
+    emprestimosAtivosInativos.value = response.data.map((emprestimo) => ({
+      ...emprestimo,
+      data_emprestimo: formatDate(emprestimo.data_emprestimo),
+      data_devolucao: formatDate(emprestimo.data_devolucao),
+    }));
+    
+    sucessoCarregarEmprestimos.value = true;
+    erroCarregarEmprestimos.value = false;
+  } catch (error) {
+    erroCarregarEmprestimos.value = true;
+    sucessoCarregarEmprestimos.value = false;
+  }
+}
+
+
+// Carregar dados ao montar o componente
+onMounted(async () => {
+  await verificarSuperAdmin();
+  if (isSuperAdmin.value) {
+    await carregarEmprestimosAtivosInativos();
+  }
+});
 
 
 // Métodos relacionados con la autenticación
@@ -652,6 +743,22 @@ async function cadastrarAdmin() {
   }
 }
 
+function getAdminName() {
+  const token = localStorage.getItem('adminToken');
+  if (token) {
+    try {
+      const decodedToken = jwt_decode(token); // Decodifica o token JWT
+      return decodedToken.name || 'Nome não encontrado'; // Retorna o nome do admin
+    } catch (error) {
+      console.error('Erro ao decodificar o token:', error);
+      return 'Erro ao obter o nome';
+    }
+  } else {
+    console.error('Token não encontrado');
+    return 'Token não encontrado';
+  }
+}
+
 
 async function fazerEmprestimo(usuarioId) {
   if (!livroSelecionado.value || !usuarioId) {
@@ -707,6 +814,8 @@ const getEmprestimosAtivos = async () => {
     console.error('Erro ao obter empréstimos ativos:', error);
   }
 };
+
+
 
 
 const deleteDialog = ref(false); // Controle da caixa de diálogo
