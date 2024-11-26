@@ -436,7 +436,7 @@ const erroFinalizacao = ref(false);     // Variável para controle do erro
 // Função para finalizar o empréstimo
 async function finalizarEmprestimo(id_emprestimo) {
   try {
-    const response = await axios.put(`/api/emprestimos/${id_emprestimo}/finalizar`, null, {
+    const response = await axios.put(`http://localhost:3000/api/emprestimos/${id_emprestimo}/finalizar`, null, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('adminToken')}`,
       },
