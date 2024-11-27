@@ -9,7 +9,19 @@
 
         <v-divider></v-divider> <!-- Línea divisoria para separar el título de los ítems -->
 
+             <!-- Ítem de Login -->
+          
+        <!-- Ítem de Login -->
+       <v-list-item v-if="!isAuthenticated" @click="navigateTo('login')"
+      :class="{ 'v-list-item--active': currentSection === 'login' }" class="my-0">
+      <v-list-item-icon>
+        <v-icon>mdi-book-open</v-icon>
+      </v-list-item-icon>
+      <v-list-item-title>Login</v-list-item-title>
+    </v-list-item>
+             
         <!-- Ítem de Empréstimos -->
+    <template v-if="isAuthenticated">
         <v-list-item @click="navigateTo('emprestimos')"
           :class="{ 'v-list-item--active': currentSection === 'emprestimos' }" class="my-0">
           <v-list-item-icon>
@@ -77,6 +89,7 @@
           </v-list-item-icon>
           <v-list-item-title>Lista de Usuários</v-list-item-title>
         </v-list-item>
+          </template>  
 
         <!-- Ítem para cerrar sesión -->
         <v-list-item @click="logoutDialog = true" class="my-4">
@@ -188,6 +201,21 @@
             <v-alert v-if="cadastroLivroSuccess" type="success">Livro cadastrado com sucesso!</v-alert>
             <v-alert v-if="cadastroLivroError" type="error">Erro ao cadastrar o livro. Tente novamente.</v-alert>
           </v-form>
+        </template>
+
+         <template v-if="currentSection === 'login'">
+          <!-- Formulário de cadastro de livros -->
+          <v-card>
+        <v-card-title>Login de Admin</v-card-title>
+        <v-card-text>
+          <v-text-field v-model="adminLogin.username" label="Username" />
+          <v-text-field v-model="adminLogin.password" label="Password" type="password" />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="primary" @click="handleLogin">Login</v-btn>
+        </v-card-actions>
+      </v-card>
         </template>
 
         <template v-if="currentSection === 'cadastroUsuarios'">
@@ -303,30 +331,37 @@
         </template>
 
           <!-- Exibindo empréstimos ativos e inativos -->
-        <template  v-if="currentSection === 'emprestimosAtivosInativos'">
-          <v-row>
-            <v-col cols="12">
-              <v-data-table
-                :headers="tableHeaders"
-                :items="emprestimosAtivosInativos"
-                item-value="id_emprestimo"
-                class="elevation-1 mt-5"
-              >
-                <template v-slot:item.data_emprestimo="{ item }">
-                  <span>{{ item.data_emprestimo }}</span>
-                </template>
+      <template v-if="currentSection === 'emprestimosAtivosInativos'">
+  <v-row>
+    <v-col cols="12">
+      <!-- Botão para imprimir -->
+      <v-btn @click="exportToPDF" color="primary" fab>
+        <v-icon>mdi-printer</v-icon>
+      </v-btn>
 
-                <template v-slot:item.data_devolucao="{ item }">
-                  <span>{{ item.data_devolucao }}</span>
-                </template>
-
-                <template v-slot:item.status="{ item }">
-                  <span>{{ item.status }}</span>
-                </template>
-              </v-data-table>
-            </v-col>
-          </v-row>
+      <!-- Tabela de empréstimos -->
+      <v-data-table
+        :headers="tableHeaders"
+        :items="emprestimosAtivosInativos"
+        item-value="id_emprestimo"
+        class="elevation-1 mt-5"
+      >
+        <template v-slot:item.data_emprestimo="{ item }">
+          <span>{{ item.data_emprestimo }}</span>
         </template>
+
+        <template v-slot:item.data_devolucao="{ item }">
+          <span>{{ item.data_devolucao }}</span>
+        </template>
+
+        <template v-slot:item.status="{ item }">
+          <span>{{ item.status }}</span>
+        </template>
+      </v-data-table>
+    </v-col>
+  </v-row>
+</template>
+
 
 
       </v-container>
@@ -372,6 +407,7 @@ import { ref, onMounted } from 'vue';
 import AppFooter from '@/components/AppFooter.vue';
 import cardLivro from '@/components/CardLivro.vue';
 import { jwtDecode } from 'jwt-decode';
+import { jsPDF } from "jspdf";
 
 // Estado de autenticación
 const isAuthenticated = ref(localStorage.getItem('adminToken') !== null);
@@ -491,6 +527,31 @@ async function carregarEmprestimosAtivosInativos() {
     erroCarregarEmprestimos.value = true;
     sucessoCarregarEmprestimos.value = false;
   }
+}
+
+
+// Função para exportar os dados para PDF
+function exportToPDF() {
+  const doc = new jsPDF();
+
+  // Adicionar título no PDF
+  doc.setFontSize(18);
+  doc.text("Empréstimos Ativos e Inativos", 14, 22);
+
+  // Definir o tamanho da fonte para o conteúdo
+  doc.setFontSize(12);
+
+  // Definir a posição inicial para os dados
+  let yPosition = 30;
+
+  // Adicionar os dados da tabela no PDF
+  emprestimosAtivosInativos.value.forEach((emprestimo) => {
+    doc.text(`ID: ${emprestimo.id_emprestimo} | Data Empréstimo: ${emprestimo.data_emprestimo} | Data Devolução: ${emprestimo.data_devolucao} | Status: ${emprestimo.status}`, 14, yPosition);
+    yPosition += 10; // Aumenta a posição vertical para a próxima linha
+  });
+
+  // Salvar o PDF com o nome desejado
+  doc.save("emprestimos_ativos_inativos.pdf");
 }
 
 
@@ -639,25 +700,18 @@ async function getLivrosDisponiveis() {
 }
 
 // Métodos de secciones
-// Métodos de secciones
-function navigateTo(section) {
-  console.log(`Navegando a la sección: ${section}`); // Log para rastrear la sección seleccionada
-  const seccionesProtegidas = ['emprestimos', 'disponiveis', 'reservas', 'cadastro', 'cadastroUsuarios', 'cadastroAdmins', 'usuarios'];
-  console.log(`Usuario autenticado: ${isAuthenticated.value}`); // Log para verificar autenticación
 
-  if (!isAuthenticated.value && seccionesProtegidas.includes(section)) {
-    console.log(`Acceso denegado a la sección protegida: ${section}`); // Log si no tiene acceso
-    loginDialog.value = true;
-  } else {
-    console.log(`Acceso permitido a la sección: ${section}`); // Log si tiene acceso
-    currentSection.value = section;
+   function navigateTo(section) {
+      const seccionesProtegidas = ["emprestimos", "disponiveis"];
+      if (!isAuthenticated.value && seccionesProtegidas.includes(section)) {
+        alert("Por favor, faça login primeiro!");
+        currentSection.value = "login";
+      } else {
+        currentSection.value = section;
 
-    if (section === 'usuarios') {
-      console.log('Cargando usuarios...');
-      carregarUsuarios();
+        if (section === "emprestimos") carregarEmprestimos();
+      }
     }
-  }
-}
 
 
 function confirmLogout() {
