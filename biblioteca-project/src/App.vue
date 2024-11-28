@@ -531,28 +531,102 @@ async function carregarEmprestimosAtivosInativos() {
 
 
 // Função para exportar os dados para PDF
+// Função para exportar os dados para PDF
 function exportToPDF() {
   const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 14;
+  const lineHeight = 10;
+  const tableTopMargin = 60;
 
-  // Adicionar título no PDF
+  // Cabeçalho
   doc.setFontSize(18);
-  doc.text("Empréstimos Ativos e Inativos", 14, 22);
+  doc.setFont("helvetica", "bold");
+  doc.text("Relatório de Empréstimos", pageWidth / 2, 20, { align: "center" });
 
-  // Definir o tamanho da fonte para o conteúdo
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "italic");
+  doc.text("Biblioteca Cristian", pageWidth / 2, 30, { align: "center" });
+
+  // Subtítulo com a data
   doc.setFontSize(12);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Data do Relatório: ${new Date().toLocaleDateString()}`, margin, 45);
 
-  // Definir a posição inicial para os dados
-  let yPosition = 30;
+  // Linha divisória
+  doc.setDrawColor(0, 0, 0); // Preto para linha
+  doc.setLineWidth(0.5);
+  doc.line(margin, 50, pageWidth - margin, 50);
 
-  // Adicionar os dados da tabela no PDF
-  emprestimosAtivosInativos.value.forEach((emprestimo) => {
-    doc.text(`ID: ${emprestimo.id_emprestimo} | Data Empréstimo: ${emprestimo.data_emprestimo} | Data Devolução: ${emprestimo.data_devolucao} | Status: ${emprestimo.status}`, 14, yPosition);
-    yPosition += 10; // Aumenta a posição vertical para a próxima linha
+  // Tabela - Cabeçalho
+  let yPosition = tableTopMargin;
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(0, 0, 0); // Preto para o texto
+
+  // Texto do cabeçalho sem bordas
+  doc.text("ID", margin + 5, yPosition);
+  doc.text("Data Empréstimo", margin + 35, yPosition);
+  doc.text("Data Devolução", margin + 100, yPosition);
+  doc.text("Status", margin + 160, yPosition);
+
+  yPosition += lineHeight;
+
+  // Tabela - Dados
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(0, 0, 0); // Preto para os dados
+  emprestimosAtivosInativos.value.forEach((emprestimo, index) => {
+    // Checar quebra de página
+    if (yPosition > pageHeight - 30) {
+      doc.addPage();
+      yPosition = 20;
+
+      // Repetir cabeçalho em nova página
+      doc.setFont("helvetica", "bold");
+      doc.text("ID", margin + 5, yPosition);
+      doc.text("Data Empréstimo", margin + 35, yPosition);
+      doc.text("Data Devolução", margin + 100, yPosition);
+      doc.text("Status", margin + 160, yPosition);
+
+      yPosition += lineHeight;
+    }
+
+    // Adicionar dados da tabela (sem bordas ou cores de fundo)
+    doc.text(emprestimo.id_emprestimo.toString(), margin + 5, yPosition);
+    doc.text(emprestimo.data_emprestimo, margin + 35, yPosition);
+    doc.text(emprestimo.data_devolucao, margin + 100, yPosition);
+    doc.text(emprestimo.status, margin + 160, yPosition);
+
+    yPosition += lineHeight;
   });
 
-  // Salvar o PDF com o nome desejado
-  doc.save("emprestimos_ativos_inativos.pdf");
+  // Rodapé
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(10);
+
+    // Texto "Desenvolvido por Cristian Brunone"
+    const footerText = "Desenvolvido por Cristian Brunone - 2024";
+    const textY = pageHeight - 10;
+
+    // Adicionar linha ocupando toda a largura do documento
+    doc.setDrawColor(0, 0, 0); // Cor da linha em preto
+    doc.line(margin, textY - 6, pageWidth - margin, textY - 6); // Linha horizontal
+
+    // Adicionar o texto
+    doc.text(footerText, pageWidth / 2, textY, { align: "center" });
+  }
+
+  // Salvar o PDF
+  doc.save("relatorio_emprestimos_biblioteca_cristian.pdf");
 }
+
+
+
+
+
+
 
 
 // Carregar dados ao montar o componente
